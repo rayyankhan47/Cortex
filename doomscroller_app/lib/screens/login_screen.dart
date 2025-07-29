@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen>
         
         // App title
         const SparkGradientText(
-          text: 'DoomScroller',
+          text: 'Cortex',
           fontSize: 32,
           fontWeight: FontWeight.bold,
         ),
@@ -221,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen>
         
         // Subtitle
         Text(
-          'Turn mindless scrolling into productive learning',
+          'Train your mind, one scroll at a time',
           style: TextStyle(
             fontSize: 16,
             color: const Color(0xFF2C3E50).withOpacity(0.8),
