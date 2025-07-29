@@ -52,6 +52,12 @@ dependencies:
   http: ^1.1.2
   # JSON handling
   json_annotation: ^4.8.1
+  # Smooth animations and physics
+  rive: ^0.12.4
+  # Custom gradients and effects
+  flutter_svg: ^2.0.9
+  # Form validation
+  form_validator: ^2.1.1
 
 dev_dependencies:
   flutter_test:

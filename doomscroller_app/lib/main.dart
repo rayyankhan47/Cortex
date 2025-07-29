@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/content_service.dart';
 import 'models/content_item.dart';
@@ -92,7 +93,7 @@ class DoomScrollerApp extends StatelessWidget {
       ),
       home: ChangeNotifierProvider(
         create: (context) => ContentProvider(),
-        child: const HomeScreen(),
+        child: const LoginScreen(),
       ),
     );
   }
