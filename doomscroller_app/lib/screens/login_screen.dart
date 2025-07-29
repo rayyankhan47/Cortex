@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/floating_bubbles.dart';
 import '../widgets/gradient_background.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'onboarding/profile_setup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isSignUp = false;
 
@@ -102,24 +105,73 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoading = true;
     });
 
-    // Simulate auth delay
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      UserCredential? credential;
+      
+      if (_isSignUp) {
+        credential = await _authService.signUpWithEmailAndPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+      } else {
+        credential = await _authService.signInWithEmailAndPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+      }
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted && credential?.user != null) {
+        setState(() {
+          _isLoading = false;
+        });
 
-      // Navigate to home screen
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+        // Check if user is onboarded
+        final isOnboarded = await _authService.isUserOnboarded(credential!.user!.uid);
+        
+        if (isOnboarded) {
+          // Navigate to home screen
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 800),
+            ),
+          );
+        } else {
+          // Navigate to onboarding
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => 
+                  ProfileSetupScreen(userId: credential.user!.uid),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: const Color(0xFFFF6B6B),
+          ),
+        );
+      }
     }
   }
 
