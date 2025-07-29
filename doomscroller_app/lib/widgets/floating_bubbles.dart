@@ -59,6 +59,7 @@ class _FloatingBubblesState extends State<FloatingBubbles>
   late List<Bubble> bubbles;
   late AnimationController _controller;
   final Random _random = Random();
+  Size? _screenSize;
 
   final List<Color> _bubbleColors = [
     const Color(0xFFFF6B6B).withOpacity(0.3),
@@ -74,20 +75,28 @@ class _FloatingBubblesState extends State<FloatingBubbles>
   @override
   void initState() {
     super.initState();
-    _initializeBubbles();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 16), // 60 FPS
       vsync: this,
     );
     _controller.addListener(_updateBubbles);
     _controller.repeat();
+    
+    // Initialize bubbles after the first frame when we have screen size
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeBubbles();
+      }
+    });
   }
 
   void _initializeBubbles() {
+    if (_screenSize == null) return;
+    
     bubbles = List.generate(widget.bubbleCount, (index) {
       return Bubble(
-        x: _random.nextDouble() * 400,
-        y: _random.nextDouble() * 800,
+        x: _random.nextDouble() * _screenSize!.width,
+        y: _random.nextDouble() * _screenSize!.height,
         radius: _random.nextDouble() * (widget.maxRadius - widget.minRadius) + widget.minRadius,
         speedX: (_random.nextDouble() - 0.5) * 2,
         speedY: (_random.nextDouble() - 0.5) * 2,
@@ -98,7 +107,7 @@ class _FloatingBubblesState extends State<FloatingBubbles>
   }
 
   void _updateBubbles() {
-    if (!mounted) return;
+    if (!mounted || _screenSize == null) return;
 
     setState(() {
       for (int i = 0; i < bubbles.length; i++) {
@@ -109,14 +118,14 @@ class _FloatingBubblesState extends State<FloatingBubbles>
         double newSpeedY = bubble.speedY;
 
         // Bounce off walls
-        if (newX - bubble.radius <= 0 || newX + bubble.radius >= 400) {
+        if (newX - bubble.radius <= 0 || newX + bubble.radius >= _screenSize!.width) {
           newSpeedX = -newSpeedX;
-          newX = newX.clamp(bubble.radius, 400 - bubble.radius);
+          newX = newX.clamp(bubble.radius, _screenSize!.width - bubble.radius);
         }
 
-        if (newY - bubble.radius <= 0 || newY + bubble.radius >= 800) {
+        if (newY - bubble.radius <= 0 || newY + bubble.radius >= _screenSize!.height) {
           newSpeedY = -newSpeedY;
-          newY = newY.clamp(bubble.radius, 800 - bubble.radius);
+          newY = newY.clamp(bubble.radius, _screenSize!.height - bubble.radius);
         }
 
         // Add slight randomness to movement
@@ -145,9 +154,25 @@ class _FloatingBubblesState extends State<FloatingBubbles>
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: BubblePainter(bubbles),
-      size: Size.infinite,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Update screen size when layout changes
+        final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+        if (_screenSize != newSize) {
+          _screenSize = newSize;
+          // Reinitialize bubbles with new screen size
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _initializeBubbles();
+            }
+          });
+        }
+        
+        return CustomPaint(
+          painter: BubblePainter(bubbles),
+          size: Size.infinite,
+        );
+      },
     );
   }
 }
